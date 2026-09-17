@@ -12,6 +12,16 @@ Ce service est **sans état** : il reçoit un instant + un lieu de naissance, re
 - `docs/spec-fonctionnelle.md` — section « Règles métier — calcul astro ».
 - `tests/fixtures/reference_charts.json` — 5 thèmes de référence avec valeurs attendues et tolérances. **Ne jamais modifier les valeurs attendues pour faire passer un test.**
 
+## Workflow
+
+Le développement suit `todo.md` : une case = une tâche atomique (30 min – 2 h), ordre imposé. Ne pas travailler hors de ce fichier sans consigne explicite.
+
+- `/next` (Sonnet) traite la première tâche non cochée. Si elle porte `[opus]`, il s'arrête : relancer avec `/next-hard` (Opus) à la place.
+- Les deux suivent le même cycle : explore → plan (**STOP**, attend validation, aucun code) → implémente (tests écrits avant ou avec le code) → vérifie (`ruff check . && ruff format --check .` puis `pytest -q`) → review (**STOP**, diff complet ; `/security-review` si la tâche touche `main.py`, la validation d'entrées ou l'auth par clé) → commit (message impératif ≤ 72 caractères préfixé par l'id de tâche, ex. `E04: add local→UT conversion with DST detection`, case cochée dans le même commit).
+- Agent `calc-verifier` (Opus, lecture seule, `tools: Bash, Read, Grep, Glob`) : compare les sorties réelles de l'API aux fixtures sans avoir vu le code qui les produit. `/next-hard` l'invoque automatiquement sur les tâches E08 et E14 ; à relancer manuellement avant tout déploiement.
+
+Structure cible ci-dessous — à construire dans l'ordre de `todo.md` (rien de tout ça n'existe encore tant que le Bloc 1 n'est pas commité) :
+
 ## Structure
 
 ```
