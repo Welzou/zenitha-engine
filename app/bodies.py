@@ -28,3 +28,19 @@ AYANAMSA_IDS: dict[str, int] = {
     "krishnamurti": swe.SIDM_KRISHNAMURTI,
     "true_citra": swe.SIDM_TRUE_CITRA,
 }
+
+SIGN_IDS: tuple[str, ...] = (
+    "aries",
+    "taurus",
+    "gemini",
+    "cancer",
+    "leo",
+    "virgo",
+    "libra",
+    "scorpio",
+    "sagittarius",
+    "capricorn",
+    "aquarius",
+    "pisces",
+)
+"""Les 12 signes sidéraux, dans l'ordre du zodiaque (index = lon_sidereal // 30)."""
