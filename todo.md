@@ -10,7 +10,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 
 ## Bloc 2 — Temps
 
-- [ ] E04 [opus] `app/timeconv.py` : `resolve_instant(date, time, lat, lng, fold)` → tz IANA, offset, datetime UTC, jd_ut. Erreurs `TZ_NOT_FOUND`, `TIME_AMBIGUOUS` (avec les deux offsets), `TIME_NONEXISTENT`, `DATE_OUT_OF_RANGE` (1800–2199). Tests : les 5 fixtures (tz, offset, utc, jd_ut exacts) + un cas ambigu (Paris 2023-10-29 02:30) + un cas inexistant (Paris 2023-03-26 02:30) + pleine mer.
+- [x] E04 [opus] `app/timeconv.py` : `resolve_instant(date, time, lat, lng, fold)` → tz IANA, offset, datetime UTC, jd_ut. Erreurs `TZ_NOT_FOUND`, `TIME_AMBIGUOUS` (avec les deux offsets), `TIME_NONEXISTENT`, `DATE_OUT_OF_RANGE` (1800–2199). Tests : les 5 fixtures (tz, offset, utc, jd_ut exacts) + un cas ambigu (Paris 2023-10-29 02:30) + un cas inexistant (Paris 2023-03-26 02:30) + pleine mer.
 
 ## Bloc 3 — Positions
 
