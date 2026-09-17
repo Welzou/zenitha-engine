@@ -5,7 +5,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 ## Bloc 1 — Squelette
 
 - [x] E01 Scaffold : `pyproject.toml` avec `requires-python = ">=3.11"` (fastapi, uvicorn, pydantic v2, pyswisseph, timezonefinder, tzdata ; dev : pytest, httpx, ruff), `app/__init__.py`, `app/main.py` avec `GET /health` renvoyant versions de swisseph et tzdata. `pip install -e ".[dev]"` doit passer sans compiler (wheel pyswisseph 3.11 Windows). `pytest` vert avec un test de health.
-- [ ] E02 `app/bodies.py` : constantes des 11 corps calculés + Ketu dérivé, mapping ayanamsa id → `swe.SIDM_*` pour `fagan_bradley`, `lahiri`, `raman`, `krishnamurti`, `true_citra`. Test : chaque id résout vers une constante existante.
+- [x] E02 `app/bodies.py` : constantes des 11 corps calculés + Ketu dérivé, mapping ayanamsa id → `swe.SIDM_*` pour `fagan_bradley`, `lahiri`, `raman`, `krishnamurti`, `true_citra`. Test : chaque id résout vers une constante existante.
 - [ ] E03 `app/schemas.py` : `ChartRequest` (date, time, lat, lng, ayanamsa, fold, lat_step_deg avec bornes), `ChartResponse` et sous-modèles (instant, ayanamsa, positions, lines) conformes au contrat d'API. Test : validation des bornes (lat 91 refusé, step 5 refusé).
 
 ## Bloc 2 — Temps
