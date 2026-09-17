@@ -14,7 +14,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 
 ## Bloc 3 — Positions
 
-- [ ] E05 [opus] `app/positions.py` : `compute_positions(jd_ut, ayanamsa)` → liste de 12 positions (lon sidérale, signe, deg_in_sign, ra, dec, rétrograde) + valeur d'ayanamsa + GST en degrés. Flags `FLG_MOSEPH | FLG_SPEED`, sidéral pour la longitude, `FLG_EQUATORIAL` pour ra/dec. Tests : 5 fixtures, tolérance 0,02° sur lon/ra/dec, 0,001° sur l'ayanamsa ; Ketu = Rahu + 180 exact.
+- [x] E05 [opus] `app/positions.py` : `compute_positions(jd_ut, ayanamsa)` → liste de 12 positions (lon sidérale, signe, deg_in_sign, ra, dec, rétrograde) + valeur d'ayanamsa + GST en degrés. Flags `FLG_MOSEPH | FLG_SPEED`, sidéral pour la longitude, `FLG_EQUATORIAL` pour ra/dec. Tests : 5 fixtures, tolérance 0,02° sur lon/ra/dec, 0,001° sur l'ayanamsa ; Ketu = Rahu + 180 exact.
 
 ## Bloc 4 — Lignes
 

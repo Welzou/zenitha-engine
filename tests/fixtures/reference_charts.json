@@ -6,7 +6,8 @@
    "lon_sidereal_deg": 0.02,
    "ra_dec_deg": 0.02,
    "line_lon_deg": 0.05,
-   "ayanamsa_deg": 0.001
+   "ayanamsa_deg": 0.001,
+   "gst_deg": 0.001
   },
   "note": "Valeurs de régression calculées avec la même bibliothèque que le moteur. Elles valident le câblage (fuseau historique, flags, formules de lignes), pas la bibliothèque elle-même. Avant la mise en prod, comparer ref01 à la main sur astro.com (zodiaque sidéral Fagan-Bradley) et noter l'écart ici."
  },
