@@ -1,0 +1,32 @@
+{
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(uvicorn *)",
+      "Bash(python -m pytest *)",
+      "Bash(python -m ruff *)",
+      "Bash(python -m uvicorn *)",
+      "Bash(.venv/Scripts/python *)",
+      "Bash(pip install *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(curl 127.0.0.1:8001 *)",
+      "Bash(curl http://127.0.0.1:8001 *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(git push *)",
+      "Bash(rm -rf *)",
+      "Bash(pip install --user *)",
+      "Bash(py -m pip install *)"
+    ]
+  }
+}
