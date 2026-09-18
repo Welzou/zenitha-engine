@@ -53,9 +53,13 @@ def mc_ic_lines(ra: float, gst: float) -> Meridians:
 
 
 def _latitudes(step: float) -> list[float]:
-    count = round((LINE_MAX_LAT - LINE_MIN_LAT) / step)
     # Recalculé depuis l'origine à chaque pas : une accumulation dériverait.
-    return [LINE_MIN_LAT + index * step for index in range(count + 1)]
+    # Le dernier point est posé sur la borne au lieu d'être calculé : un pas qui
+    # ne divise pas la plage sortirait sinon de la fenêtre que les méridiens et
+    # le contrat annoncent (89,1° à pas 1,3°) ou s'arrêterait avant (88,8° à 0,7°).
+    count = math.ceil((LINE_MAX_LAT - LINE_MIN_LAT) / step)
+    inner = (LINE_MIN_LAT + index * step for index in range(count))
+    return [*(lat for lat in inner if lat < LINE_MAX_LAT), LINE_MAX_LAT]
 
 
 def _hour_angle(dec: float, lat: float) -> float | None:

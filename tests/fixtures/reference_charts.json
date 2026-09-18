@@ -9,7 +9,7 @@
    "ayanamsa_deg": 0.001,
    "gst_deg": 0.001
   },
-  "note": "Valeurs de régression calculées avec la même bibliothèque que le moteur. Elles valident le câblage (fuseau historique, flags, formules de lignes), pas la bibliothèque elle-même. Avant la mise en prod, comparer ref01 à la main sur astro.com (zodiaque sidéral Fagan-Bradley) et noter l'écart ici."
+  "note": "Valeurs de régression calculées avec la même bibliothèque que le moteur. Elles valident le câblage (fuseau historique, flags, formules de lignes), pas la bibliothèque elle-même. Comparé ref01 sur astro.com (Fagan/Bradley) le 18/09/2026 : toutes les positions planétaires et l'ayanamsa correspondent à la seconde d'arc près. Écart de 1°08' sur Rahu/Ketu, attendu (fixture = nœud moyen, astro.com affiche par défaut le nœud vrai)."
  },
  "charts": [
   {

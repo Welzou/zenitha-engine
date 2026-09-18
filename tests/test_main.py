@@ -138,6 +138,24 @@ class TestChart:
 
         assert response.status_code == 401
 
+    def test_error_shapes_are_published_in_the_schema(self):
+        route = client.get("/openapi.json").json()["paths"]["/v1/chart"]["post"]
+
+        assert set(route["responses"]) >= {"200", "400", "401", "422"}
+
+    def test_empty_key_disables_the_check(self, monkeypatch):
+        # `EnvironmentFile` ne sait pas laisser une variable indéfinie : une
+        # ligne `ENGINE_API_KEY=` la pose vide. Vide doit donc valoir désactivé
+        # comme absent, sinon la garde refuse une mauvaise clé tout en laissant
+        # passer une requête sans clé — mi-armée, et donc trompeuse à tester.
+        monkeypatch.setenv("ENGINE_API_KEY", "")
+
+        response = client.post(
+            "/v1/chart", json=_payload(REF01), headers={"X-Engine-Key": "nope"}
+        )
+
+        assert response.status_code == 200
+
     def test_correct_key_returns_200(self, monkeypatch):
         monkeypatch.setenv("ENGINE_API_KEY", "secret")
 

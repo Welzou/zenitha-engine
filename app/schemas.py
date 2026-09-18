@@ -50,6 +50,7 @@ ErrorCode = Literal[
     "TIME_AMBIGUOUS",
     "TIME_NONEXISTENT",
     "DATE_OUT_OF_RANGE",
+    "UNAUTHORIZED",
 ]
 
 

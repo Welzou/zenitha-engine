@@ -1,12 +1,11 @@
 """Conversion date/heure civile locale → temps universel, fuseau historique."""
 
 import datetime as dt
-from functools import cache
 from typing import ClassVar
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
-from timezonefinder import TimezoneFinder
+import timezonefinder
 
 from app import schemas
 
@@ -40,11 +39,6 @@ class TimeNonexistent(EngineError):
     code = "TIME_NONEXISTENT"
 
 
-@cache
-def _finder() -> TimezoneFinder:
-    return TimezoneFinder()
-
-
 def _offset_minutes(moment: dt.datetime) -> int:
     return round(moment.utcoffset().total_seconds() / 60)
 
@@ -60,7 +54,11 @@ def resolve_instant(
     if not MIN_DATE <= date <= MAX_DATE:
         raise DateOutOfRange({"min": MIN_DATE.isoformat(), "max": MAX_DATE.isoformat()})
 
-    tz = _finder().timezone_at_land(lat=lat, lng=lng)
+    # Fonction de module et non une instance à nous : `TimezoneFinder` est
+    # documenté « une instance par thread », or cette route est synchrone et
+    # tourne donc sur le threadpool de Starlette. Un fuseau faux ne se voit pas
+    # sur la carte, il la décale d'une heure entière.
+    tz = timezonefinder.timezone_at_land(lat=lat, lng=lng)
     if tz is None:
         raise TzNotFound("no timezone at these coordinates")
 

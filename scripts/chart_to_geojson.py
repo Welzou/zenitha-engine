@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from app import lines, positions, schemas, timeconv
 
 DEFAULT_LAT_STEP_DEG = 0.5
@@ -58,18 +60,36 @@ def _feature_collection(chart_lines: list[schemas.LineOut]) -> dict[str, object]
 def main(argv: list[str]) -> int:
     args = _parse_args(argv)
 
+    # Les bornes viennent du schéma et non d'argparse : sans ça un pas de 0
+    # divisait par zéro et un pas négatif vidait la grille de latitudes.
+    try:
+        request = schemas.ChartRequest(
+            date=args.date,
+            time=args.time,
+            lat=args.lat,
+            lng=args.lng,
+            ayanamsa=args.ayanamsa,
+            fold=args.fold,
+            lat_step_deg=args.lat_step_deg,
+        )
+    except ValidationError as error:
+        print(error, file=sys.stderr)
+        return 2
+
     try:
         instant = timeconv.resolve_instant(
-            args.date, args.time, args.lat, args.lng, args.fold
+            request.date, request.time, request.lat, request.lng, request.fold
         )
     except timeconv.EngineError as error:
         print(f"{error.code}: {error.detail}", file=sys.stderr)
         return 1
 
-    chart = positions.compute_positions(instant.jd_ut, args.ayanamsa)
+    chart = positions.compute_positions(instant.jd_ut, request.ayanamsa)
     _print_positions(chart.positions)
 
-    chart_lines = lines.build_lines(chart.positions, chart.gst_deg, args.lat_step_deg)
+    chart_lines = lines.build_lines(
+        chart.positions, chart.gst_deg, request.lat_step_deg
+    )
     args.out.write_text(json.dumps(_feature_collection(chart_lines)), encoding="utf-8")
     print(f"\n{len(chart_lines)} lignes ecrites dans {args.out}")
     return 0

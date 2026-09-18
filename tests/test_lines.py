@@ -407,6 +407,23 @@ class TestSamplingStep:
 
         assert point_count(2.0) < point_count(0.5) < point_count(0.1)
 
+    # 0,5 divise la plage de 178° ; la plupart des pas que l'API accepte non.
+    @pytest.mark.parametrize("step", [0.1, 0.3, 0.5, 0.7, 1.3, 2.0])
+    def test_grid_spans_exactly_the_line_window(self, step):
+        latitudes = lines._latitudes(step)
+
+        assert latitudes[0] == lines.LINE_MIN_LAT
+        assert latitudes[-1] == lines.LINE_MAX_LAT
+        assert latitudes == sorted(set(latitudes))
+
+    def test_curves_stay_inside_the_window_at_an_uneven_step(self, chart, computed):
+        for position in computed.positions:
+            acdc = lines.ac_dc_lines(position.ra, position.dec, chart["gst_deg"], 1.3)
+
+            for geometry in (acdc.ac, acdc.dc):
+                for _, lat in curve_points(geometry):
+                    assert lines.LINE_MIN_LAT <= lat <= lines.LINE_MAX_LAT
+
 
 ANGLES: tuple[schemas.Angle, ...] = ("mc", "ic", "ac", "dc")
 
