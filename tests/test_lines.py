@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import swisseph as swe
 
-from app import lines, positions, schemas
+from app import bodies, lines, positions, schemas
 
 FIXTURES = Path(__file__).parent / "fixtures" / "reference_charts.json"
 _DATA = json.loads(FIXTURES.read_text(encoding="utf-8"))
@@ -406,3 +406,99 @@ class TestSamplingStep:
             return sum(len(segment) for segment in acdc.ac.coordinates)
 
         assert point_count(2.0) < point_count(0.5) < point_count(0.1)
+
+
+ANGLES: tuple[schemas.Angle, ...] = ("mc", "ic", "ac", "dc")
+
+
+def built_lines(chart: dict, computed, step: float = DEFAULT_STEP):
+    return lines.build_lines(computed.positions, chart["gst_deg"], step)
+
+
+def by_id(built: list[schemas.LineOut]) -> dict[str, schemas.LineOut]:
+    return {line.id: line for line in built}
+
+
+class TestBuildLines:
+    def test_produces_the_expected_ids(self, chart, computed):
+        built = built_lines(chart, computed)
+
+        assert [line.id for line in built] == [
+            f"{body}_{angle}" for body in bodies.ALL_BODY_IDS for angle in ANGLES
+        ]
+        assert len(built) == lines.LINES_PER_CHART
+        assert len(by_id(built)) == lines.LINES_PER_CHART
+
+    def test_meridians_match_the_fixtures(self, chart, computed):
+        built = by_id(built_lines(chart, computed))
+
+        for body in bodies.ALL_BODY_IDS:
+            expected = chart["lines"][body]
+
+            for angle in ("mc", "ic"):
+                line = built[f"{body}_{angle}"]
+
+                assert line.body == body
+                assert line.angle == angle
+                assert meridian_longitude(line.geometry) == pytest.approx(
+                    expected[f"{angle}_lon"], abs=TOL["line_lon_deg"]
+                )
+
+    def test_acdc_match_the_fixtures(self, chart, computed):
+        built = by_id(built_lines(chart, computed))
+
+        for body in bodies.ALL_BODY_IDS:
+            expected = chart["lines"][body]["acdc_by_lat"]
+
+            for angle in ("ac", "dc"):
+                line = built[f"{body}_{angle}"]
+                by_lat = longitude_by_latitude(line.geometry)
+
+                assert line.body == body
+                assert line.angle == angle
+                for latitude, want in expected.items():
+                    assert by_lat[float(latitude)] == pytest.approx(
+                        want[angle], abs=TOL["line_lon_deg"]
+                    )
+
+    def test_every_geometry_is_a_non_empty_multilinestring(self, chart, computed):
+        for line in built_lines(chart, computed):
+            assert line.geometry.type == "MultiLineString"
+            assert line.geometry.coordinates
+            for segment in line.geometry.coordinates:
+                assert len(segment) >= 2
+
+    # ref05, Tromsø au solstice : le Soleil ne se lève ni ne se couche au-delà
+    # de la latitude limite. C'est le seul cas où une géométrie est amputée —
+    # elle reste non vide, la courbe existe toujours plus bas.
+    def test_circumpolar_geometry_is_cut_not_empty(self):
+        computed = positions.compute_positions(
+            TROMSO["jd_ut"], TROMSO["ayanamsa"]["id"]
+        )
+        built = by_id(built_lines(TROMSO, computed))
+        limit = 90 - abs(body_position(TROMSO, "sun").dec)
+
+        for angle in ("ac", "dc"):
+            latitudes = [
+                abs(lat) for _, lat in curve_points(built[f"sun_{angle}"].geometry)
+            ]
+
+            assert latitudes
+            assert max(latitudes) <= limit
+            assert max(latitudes) >= limit - DEFAULT_STEP
+
+        for angle in ("mc", "ic"):
+            latitudes = [lat for _, lat in curve_points(built[f"sun_{angle}"].geometry)]
+
+            assert min(latitudes) == lines.LINE_MIN_LAT
+            assert max(latitudes) == lines.LINE_MAX_LAT
+
+    def test_step_is_forwarded(self, chart, computed):
+        def point_count(step: float) -> int:
+            return sum(
+                len(segment)
+                for line in built_lines(chart, computed, step)
+                for segment in line.geometry.coordinates
+            )
+
+        assert point_count(2.0) < point_count(0.5)

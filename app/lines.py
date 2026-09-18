@@ -8,6 +8,8 @@ from app import schemas
 
 LINE_MIN_LAT = -89.0
 LINE_MAX_LAT = 89.0
+LINES_PER_CHART = 48
+"""12 corps × 4 angles. Le contrat d'API n'admet pas d'autre nombre."""
 _ANTIMERIDIAN_JUMP_DEG = 180.0
 _MAX_LONGITUDE_GAP_DEG = 2.0
 # Garde-fou seulement : à pas 0,5° la bisection s'arrête d'elle-même autour de
@@ -200,3 +202,38 @@ def ac_dc_lines(ra: float, dec: float, gst: float, step: float) -> AcDc:
         setting.append((dc_lon, lat))
 
     return AcDc(ac=_multiline(rising), dc=_multiline(setting))
+
+
+def build_lines(
+    positions: Sequence[schemas.PositionOut],
+    gst: float,
+    step: float,
+) -> list[schemas.LineOut]:
+    """Les quatre lignes de chaque corps, dans l'ordre des positions reçues.
+
+    Un seul balayage de latitudes par corps sert AC et DC, et la position est
+    lue telle quelle : rien n'est recalculé ligne par ligne.
+    """
+    built: list[schemas.LineOut] = []
+
+    for position in positions:
+        meridians = mc_ic_lines(position.ra, gst)
+        acdc = ac_dc_lines(position.ra, position.dec, gst, step)
+        geometries: tuple[tuple[schemas.Angle, schemas.LineGeometry], ...] = (
+            ("mc", meridians.mc),
+            ("ic", meridians.ic),
+            ("ac", acdc.ac),
+            ("dc", acdc.dc),
+        )
+
+        built += [
+            schemas.LineOut(
+                id=f"{position.body}_{angle}",
+                body=position.body,
+                angle=angle,
+                geometry=geometry,
+            )
+            for angle, geometry in geometries
+        ]
+
+    return built
