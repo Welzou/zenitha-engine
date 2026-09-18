@@ -19,7 +19,8 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 ## Bloc 4 — Lignes
 
 - [x] E06 [opus] `app/lines.py` : `mc_ic_lines(ra, gst)` → deux méridiens de −89° à +89°. Test : `mc_lon` et `ic_lon` des fixtures, tolérance 0,05°.
-- [ ] E07 [opus] `app/lines.py` : `ac_dc_lines(ra, dec, gst, step)` → échantillonnage par latitude, `None` quand circumpolaire, découpage en segments à l'antiméridien et aux ruptures. Tests : `acdc_by_lat` des fixtures aux 5 latitudes ; symétrie AC/DC autour de MC ; Tromsø : Soleil sans AC/DC au-delà de la latitude limite ; altitude ≈ 0 recalculée avec `swe.azalt` sur un point AC (tolérance 0,1°).
+- [x] E07 [opus] `app/lines.py` : `ac_dc_lines(ra, dec, gst, step)` → échantillonnage par latitude, `None` quand circumpolaire, découpage en segments à l'antiméridien et aux ruptures. Tests : `acdc_by_lat` des fixtures aux 5 latitudes ; symétrie AC/DC autour de MC ; Tromsø : Soleil sans AC/DC au-delà de la latitude limite ; altitude ≈ 0 recalculée avec `swe.azalt` sur un point AC (tolérance 0,1°).
+- [ ] E07b [opus] Fermeture des courbes AC/DC au sommet : ajouter le point d'apex (latitude limite ±(90−|δ|), longitude MC ou IC) à l'extrémité polaire de chaque courbe pour que AC et DC se rejoignent, et densifier l'échantillonnage près de l'apex (subdiviser l'intervalle de latitude tant que |Δλ| entre deux points consécutifs > 2°). Tests : extrémités AC et DC identiques ; aucun couple consécutif > 2° de longitude hors coupure antiméridien ; les fixtures aux 5 latitudes inchangées. Regénérer le geojson : plus de tirets.
 - [ ] E08 [opus] Assemblage : `build_lines(positions, gst, step)` → 48 objets `{id, body, angle, geometry: MultiLineString}`. Test : 48 lignes, ids uniques, chaque géométrie non vide sauf cas circumpolaire documenté.
 
 ## Bloc 5 — API

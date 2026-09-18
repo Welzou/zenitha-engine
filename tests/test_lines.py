@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import swisseph as swe
 
 from app import lines, positions, schemas
 
@@ -9,6 +10,11 @@ FIXTURES = Path(__file__).parent / "fixtures" / "reference_charts.json"
 _DATA = json.loads(FIXTURES.read_text(encoding="utf-8"))
 CHARTS = _DATA["charts"]
 TOL = _DATA["_meta"]["tolerances"]
+
+DEFAULT_STEP = 0.5
+SYMMETRY_TOLERANCE_DEG = 1e-6
+ALTITUDE_TOLERANCE_DEG = 0.1
+TROMSO = CHARTS[4]
 
 
 @pytest.fixture(params=CHARTS, ids=[chart["id"] for chart in CHARTS])
@@ -28,6 +34,15 @@ def meridian_longitude(geometry: schemas.LineGeometry) -> float:
 
     assert len(longitudes) == 1
     return longitudes.pop()
+
+
+def longitude_by_latitude(geometry: schemas.LineGeometry) -> dict[float, float]:
+    return {lat: lon for segment in geometry.coordinates for lon, lat in segment}
+
+
+def body_position(chart: dict, body: str):
+    computed = positions.compute_positions(chart["jd_ut"], chart["ayanamsa"]["id"])
+    return next(p for p in computed.positions if p.body == body)
 
 
 class TestNorm180:
@@ -59,8 +74,8 @@ class TestMeridianGeometry:
                 assert geometry.type == "MultiLineString"
                 (segment,) = geometry.coordinates
                 assert [lat for _, lat in segment] == [
-                    lines.MERIDIAN_MIN_LAT,
-                    lines.MERIDIAN_MAX_LAT,
+                    lines.LINE_MIN_LAT,
+                    lines.LINE_MAX_LAT,
                 ]
 
 
@@ -91,3 +106,173 @@ class TestReferenceMeridians:
 
             for geometry in (meridians.mc, meridians.ic):
                 assert -180 < meridian_longitude(geometry) <= 180
+
+
+class TestReferenceAcDc:
+    def test_longitudes_at_reference_latitudes(self, chart, computed):
+        for position in computed.positions:
+            expected = chart["lines"][position.body]["acdc_by_lat"]
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+            ac_by_lat = longitude_by_latitude(acdc.ac)
+            dc_by_lat = longitude_by_latitude(acdc.dc)
+
+            for latitude, want in expected.items():
+                lat = float(latitude)
+                assert ac_by_lat[lat] == pytest.approx(
+                    want["ac"], abs=TOL["line_lon_deg"]
+                )
+                assert dc_by_lat[lat] == pytest.approx(
+                    want["dc"], abs=TOL["line_lon_deg"]
+                )
+
+    def test_ac_and_dc_are_symmetric_around_mc(self, chart, computed):
+        for position in computed.positions:
+            mc_lon = lines.norm180(position.ra - chart["gst_deg"])
+
+            for lat in lines._latitudes(DEFAULT_STEP):
+                found = lines._horizon_longitudes(
+                    position.ra, position.dec, chart["gst_deg"], lat
+                )
+                if found is None:
+                    continue
+
+                ac_lon, dc_lon = found
+                assert lines.norm180(mc_lon - ac_lon) == pytest.approx(
+                    lines.norm180(dc_lon - mc_lon), abs=SYMMETRY_TOLERANCE_DEG
+                )
+
+
+class TestCircumpolar:
+    # ref05, Tromsø au solstice d'été : le Soleil culmine à une déclinaison de
+    # 23,44°, donc plus rien ne se lève ni ne se couche au-delà de 90 - 23,44.
+    @pytest.mark.parametrize(
+        ("lat", "has_solution"),
+        [(60.0, True), (66.0, True), (66.5, True), (66.6, False), (70.0, False)],
+    )
+    def test_no_solution_beyond_the_polar_limit(self, lat, has_solution):
+        sun = body_position(TROMSO, "sun")
+        found = lines._horizon_longitudes(sun.ra, sun.dec, TROMSO["gst_deg"], lat)
+
+        assert (found is not None) == has_solution
+
+    def test_sun_never_rises_at_tromso_itself(self):
+        sun = body_position(TROMSO, "sun")
+
+        assert (
+            lines._horizon_longitudes(sun.ra, sun.dec, TROMSO["gst_deg"], TROMSO["lat"])
+            is None
+        )
+
+    def test_geometry_is_cut_at_the_polar_limit(self):
+        sun = body_position(TROMSO, "sun")
+        acdc = lines.ac_dc_lines(sun.ra, sun.dec, TROMSO["gst_deg"], DEFAULT_STEP)
+        limit = 90 - abs(sun.dec)
+
+        assert limit == pytest.approx(66.5631, abs=0.001)
+        for geometry in (acdc.ac, acdc.dc):
+            assert geometry.coordinates
+            assert all(
+                abs(lat) <= limit
+                for segment in geometry.coordinates
+                for _, lat in segment
+            )
+
+
+class TestHorizonAltitude:
+    def test_ac_and_dc_points_are_on_the_horizon(self, chart, computed):
+        # Seul test du moteur qui ne rejoue pas nos formules : il redemande à
+        # swisseph ce que l'on voit du Soleil depuis un point de chaque courbe.
+        sun = next(p for p in computed.positions if p.body == "sun")
+        acdc = lines.ac_dc_lines(sun.ra, sun.dec, chart["gst_deg"], DEFAULT_STEP)
+
+        for geometry, rising in ((acdc.ac, True), (acdc.dc, False)):
+            lon = longitude_by_latitude(geometry)[30.0]
+            azimuth, true_altitude, _ = swe.azalt(
+                chart["jd_ut"],
+                swe.EQU2HOR,
+                (lon, 30.0, 0.0),
+                0.0,
+                0.0,
+                (sun.ra, sun.dec, 1.0),
+            )
+
+            assert true_altitude == pytest.approx(
+                chart["check_sun_ac_altitude_deg_at_lat30"],
+                abs=ALTITUDE_TOLERANCE_DEG,
+            )
+            # Azimut swisseph : 0 = sud, 90 = ouest, 180 = nord, 270 = est.
+            # L'altitude seule ne sépare pas lever et coucher — les deux valent
+            # zéro. L'azimut le fait : on se lève à l'est, on se couche à l'ouest.
+            assert (azimuth > 180) == rising
+
+
+class TestMultiline:
+    # Les deux règles de découpe, testées directement : sur une courbe réelle la
+    # zone circumpolaire tombe toujours aux deux extrémités du balayage, donc un
+    # `None` n'y coupe jamais rien au milieu et aucun test d'intégration ne
+    # pourrait distinguer la coupure d'une simple concaténation.
+    def test_a_gap_splits_the_line(self):
+        points = [(0.0, -2.0), (1.0, -1.0), None, (2.0, 1.0), (3.0, 2.0)]
+
+        assert len(lines._multiline(points).coordinates) == 2
+
+    def test_an_antimeridian_crossing_splits_the_line(self):
+        points = [(179.0, -1.0), (179.5, -0.5), (-179.5, 0.0), (-179.0, 0.5)]
+
+        assert len(lines._multiline(points).coordinates) == 2
+
+    def test_single_point_segments_are_dropped(self):
+        points = [(0.0, -2.0), None, (50.0, 0.0), None, (2.0, 1.0), (3.0, 2.0)]
+
+        assert lines._multiline(points).coordinates == [[(2.0, 1.0), (3.0, 2.0)]]
+
+
+class TestSegmentation:
+    def test_segments_never_jump_the_antimeridian(self, chart, computed):
+        for position in computed.positions:
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+
+            for geometry in (acdc.ac, acdc.dc):
+                for segment in geometry.coordinates:
+                    for (left, _), (right, _) in zip(segment, segment[1:]):
+                        assert abs(right - left) <= 180
+
+    def test_every_segment_is_a_valid_linestring(self, chart, computed):
+        for position in computed.positions:
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+
+            for geometry in (acdc.ac, acdc.dc):
+                assert geometry.coordinates
+                for segment in geometry.coordinates:
+                    assert len(segment) >= 2
+
+    def test_latitudes_increase_within_each_segment(self, chart, computed):
+        for position in computed.positions:
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+
+            for geometry in (acdc.ac, acdc.dc):
+                for segment in geometry.coordinates:
+                    latitudes = [lat for _, lat in segment]
+                    assert latitudes == sorted(latitudes)
+                    assert lines.LINE_MIN_LAT <= latitudes[0]
+                    assert latitudes[-1] <= lines.LINE_MAX_LAT
+
+
+class TestSamplingStep:
+    def test_step_controls_sampling_density(self):
+        sun = body_position(CHARTS[0], "sun")
+        gst = CHARTS[0]["gst_deg"]
+
+        def point_count(step: float) -> int:
+            acdc = lines.ac_dc_lines(sun.ra, sun.dec, gst, step)
+            return sum(len(segment) for segment in acdc.ac.coordinates)
+
+        assert point_count(2.0) < point_count(0.5) < point_count(0.1)
