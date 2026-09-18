@@ -19,10 +19,12 @@ Traite la prochaine tâche non cochée de `todo.md`. Une seule tâche. Ne passe 
 ## 2. PLAN [STOP]
 
 - Étapes, fichiers créés/modifiés, tests à écrire (avec les valeurs de fixture visées et la tolérance).
+- Termine par un bloc **En clair** : 3 lignes maximum, sans jargon, pour quelqu'un qui ne connaît ni le domaine ni le langage — ce que la tâche fait, comment on saura que c'est juste, le point d'attention s'il y en a un.
 - Aucun code. Attends ma validation.
 
 ## 3. IMPLEMENT
 
+- **Avant tout** : le `model: opus` de ce skill ne tient que jusqu'au premier [STOP] ; à partir d'ici c'est le modèle de session qui tourne. Si tu n'es pas Opus, arrête-toi et réponds uniquement : « Session pas en Opus : fais `/model opus` puis dis "continue" ».
 - Implémente le plan validé. Écris les tests **avant ou en même temps** que le code.
 - Interdit : modifier une valeur attendue dans les fixtures, élargir une tolérance, `skip` un test.
 

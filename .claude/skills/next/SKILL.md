@@ -19,6 +19,7 @@ Traite la prochaine tâche non cochée de `todo.md`. Une seule tâche. Ne passe 
 ## 2. PLAN [STOP]
 
 - Étapes, fichiers créés/modifiés, tests à écrire (avec les valeurs de fixture visées et la tolérance).
+- Termine par un bloc **En clair** : 3 lignes maximum, sans jargon, pour quelqu'un qui ne connaît ni le domaine ni le langage — ce que la tâche fait, comment on saura que c'est juste, le point d'attention s'il y en a un.
 - Aucun code. Attends ma validation.
 
 ## 3. IMPLEMENT
