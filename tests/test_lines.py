@@ -180,6 +180,136 @@ class TestCircumpolar:
             )
 
 
+def curve_points(geometry: schemas.LineGeometry) -> list[tuple[float, float]]:
+    return [point for segment in geometry.coordinates for point in segment]
+
+
+def has_apex_in_window(dec: float) -> bool:
+    return 90 - abs(dec) <= lines.LINE_MAX_LAT
+
+
+class TestApex:
+    def test_ac_and_dc_meet_at_the_apex(self, chart, computed):
+        for position in computed.positions:
+            if not has_apex_in_window(position.dec):
+                continue
+
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+            rising = curve_points(acdc.ac)
+            setting = curve_points(acdc.dc)
+
+            assert rising[0] == setting[0]
+            assert rising[-1] == setting[-1]
+
+    def test_apex_sits_at_the_polar_limit(self, chart, computed):
+        for position in computed.positions:
+            if not has_apex_in_window(position.dec):
+                continue
+
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+            limit = 90 - abs(position.dec)
+
+            for geometry in (acdc.ac, acdc.dc):
+                latitudes = [lat for _, lat in curve_points(geometry)]
+                assert min(latitudes) == pytest.approx(-limit, abs=1e-9)
+                assert max(latitudes) == pytest.approx(limit, abs=1e-9)
+
+    # Jupiter dans ref01 et Neptune dans ref03 passent à moins d'un degré de
+    # l'équateur céleste : leur latitude limite dépasse le bord de la carte,
+    # donc leur courbe sort par le haut sans se refermer.
+    @pytest.mark.parametrize(("chart_index", "body"), [(0, "jupiter"), (2, "neptune")])
+    def test_curve_stays_open_without_an_apex(self, chart_index, body):
+        chart = CHARTS[chart_index]
+        position = body_position(chart, body)
+        acdc = lines.ac_dc_lines(
+            position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+        )
+
+        assert not has_apex_in_window(position.dec)
+        latitudes = [lat for _, lat in curve_points(acdc.ac)]
+        assert min(latitudes) == lines.LINE_MIN_LAT
+        assert max(latitudes) == lines.LINE_MAX_LAT
+
+
+class TestDensification:
+    def test_no_longitude_gap_above_the_threshold(self, chart, computed):
+        for position in computed.positions:
+            acdc = lines.ac_dc_lines(
+                position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+            )
+
+            for geometry in (acdc.ac, acdc.dc):
+                for segment in geometry.coordinates:
+                    for (left, _), (right, _) in zip(segment, segment[1:]):
+                        assert abs(right - left) <= lines._MAX_LONGITUDE_GAP_DEG
+
+    def test_densification_only_adds_latitudes(self, chart, computed):
+        for position in computed.positions:
+            produced = {
+                lat for lat, _ in lines._horizon_samples(position.dec, DEFAULT_STEP)
+            }
+            from_grid = {
+                lat
+                for lat in lines._latitudes(DEFAULT_STEP)
+                if lines._hour_angle(position.dec, lat) is not None
+            }
+
+            assert from_grid <= produced
+
+
+class TestAntimeridianInterpolation:
+    # Les deux corps dont l'apex tombe sur l'antiméridien : Pluton (MC à
+    # -179,91°) et Mercure (IC à -179,63°). Sans les points de traversée leur
+    # apex restait seul dans son segment, était filtré, et la courbe finissait
+    # ouverte d'un côté.
+    @pytest.mark.parametrize(("chart_index", "body"), [(4, "pluto"), (1, "mercury")])
+    def test_crossing_inserts_both_map_edges(self, chart_index, body):
+        chart = CHARTS[chart_index]
+        position = body_position(chart, body)
+        acdc = lines.ac_dc_lines(
+            position.ra, position.dec, chart["gst_deg"], DEFAULT_STEP
+        )
+
+        crossings = 0
+        for geometry in (acdc.ac, acdc.dc):
+            for leaving, entering in zip(
+                geometry.coordinates, geometry.coordinates[1:]
+            ):
+                exit_lon, exit_lat = leaving[-1]
+                entry_lon, entry_lat = entering[0]
+
+                assert abs(exit_lon) == 180.0
+                assert entry_lon == -exit_lon
+                assert exit_lat == entry_lat
+                crossings += 1
+
+        assert crossings
+
+    def test_the_single_point_filter_never_fires(self, chart, computed):
+        for position in computed.positions:
+            samples = lines._horizon_samples(position.dec, DEFAULT_STEP)
+
+            for index in (0, 1):
+                points = [
+                    (
+                        lines._longitudes(position.ra, chart["gst_deg"], hour_angle)[
+                            index
+                        ],
+                        lat,
+                    )
+                    for lat, hour_angle in samples
+                ]
+                raw = lines._split_segments(points)
+
+                assert sum(len(segment) for segment in raw) == sum(
+                    len(segment) for segment in raw if len(segment) >= 2
+                )
+
+
 class TestHorizonAltitude:
     def test_ac_and_dc_points_are_on_the_horizon(self, chart, computed):
         # Seul test du moteur qui ne rejoue pas nos formules : il redemande à
