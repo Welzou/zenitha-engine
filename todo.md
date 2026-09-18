@@ -18,7 +18,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 
 ## Bloc 4 — Lignes
 
-- [ ] E06 [opus] `app/lines.py` : `mc_ic_lines(ra, gst)` → deux méridiens de −89° à +89°. Test : `mc_lon` et `ic_lon` des fixtures, tolérance 0,05°.
+- [x] E06 [opus] `app/lines.py` : `mc_ic_lines(ra, gst)` → deux méridiens de −89° à +89°. Test : `mc_lon` et `ic_lon` des fixtures, tolérance 0,05°.
 - [ ] E07 [opus] `app/lines.py` : `ac_dc_lines(ra, dec, gst, step)` → échantillonnage par latitude, `None` quand circumpolaire, découpage en segments à l'antiméridien et aux ruptures. Tests : `acdc_by_lat` des fixtures aux 5 latitudes ; symétrie AC/DC autour de MC ; Tromsø : Soleil sans AC/DC au-delà de la latitude limite ; altitude ≈ 0 recalculée avec `swe.azalt` sur un point AC (tolérance 0,1°).
 - [ ] E08 [opus] Assemblage : `build_lines(positions, gst, step)` → 48 objets `{id, body, angle, geometry: MultiLineString}`. Test : 48 lignes, ids uniques, chaque géométrie non vide sauf cas circumpolaire documenté.
 
