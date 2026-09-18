@@ -26,7 +26,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 ## Bloc 5 — API
 
 - [x] E09 `POST /v1/chart` : enchaîne timeconv → positions → lines, header `X-Engine-Key` vérifié si `ENGINE_API_KEY` défini, mapping des exceptions vers 400 + codes. Tests httpx : réponse complète pour ref01, chaque code d'erreur, 422 sur payload invalide, 401 sans clé.
-- [ ] E10 Perf : mesurer `/v1/chart` sur ref01 (cible < 200 ms), ajuster si besoin (pas de recalcul de positions par ligne). Test : assertion de durée large (< 1 s) pour ne pas être flaky.
+- [x] E10 Perf : mesurer `/v1/chart` sur ref01 (cible < 200 ms), ajuster si besoin (pas de recalcul de positions par ligne). Test : assertion de durée large (< 1 s) pour ne pas être flaky.
 
 ## Bloc 6 — Qualité et livraison
 

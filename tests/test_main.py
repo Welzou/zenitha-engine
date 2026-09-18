@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -64,6 +65,17 @@ class TestChart:
         assert len(body["positions"]) == 12
         assert len(body["lines"]) == 48
         assert len({line["id"] for line in body["lines"]}) == 48
+
+    def test_ref01_performance(self):
+        client.post("/v1/chart", json=_payload(REF01))  # warmup
+
+        start = time.perf_counter()
+        response = client.post("/v1/chart", json=_payload(REF01))
+        duration = time.perf_counter() - start
+
+        assert response.status_code == 200
+        # Cible réelle 200 ms ; seuil large pour ne pas flaker sur CI chargée.
+        assert duration < 1.0
 
     @pytest.mark.parametrize(
         ("code", "payload"),
