@@ -1,9 +1,9 @@
 """Schémas pydantic v2 du contrat d'API (entrée/sortie de `POST /v1/chart`)."""
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 AyanamsaId = Literal[
     "fagan_bradley",
@@ -72,6 +72,12 @@ class InstantOut(BaseModel):
     utc_offset_minutes: int
     utc: datetime
     jd_ut: float
+
+    @field_serializer("utc")
+    def _serialize_utc(self, value: datetime) -> str:
+        # pydantic v2 rend "+00:00" pour un datetime aware ; le contrat d'API
+        # promet un "Z" (cf. exemple de la spec technique).
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class AyanamsaOut(BaseModel):
