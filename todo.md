@@ -30,7 +30,7 @@ Une case = une tâche implémentable et commitable seule, 30 min à 2 h. Ordre i
 
 ## Bloc 6 — Qualité et livraison
 
-- [ ] E11 `README.md` : ce que fait le service, licence AGPL et pourquoi, comment lancer, exemple curl. `LICENSE` AGPL-3.0 présent.
+- [x] E11 `README.md` : ce que fait le service, licence AGPL et pourquoi, comment lancer, exemple curl. `LICENSE` AGPL-3.0 présent.
 - [ ] E12 CI GitHub Actions : ruff + pytest sur push et PR, matrice `ubuntu-latest` + `windows-latest`, Python 3.11.
 - [ ] E13 `deploy.sh` + fichier `astro-engine.service` (systemd) tels que décrits dans la spec technique, dans `deploy/`. Ces fichiers tournent sur le VPS Linux, pas ici : shebang `#!/usr/bin/env bash`, LF (garanti par `.gitattributes`), `apt install build-essential python3-dev` dans le script avant `pip install` (pyswisseph compile si le VPS est en 3.12). Pas d'exécution ici, juste les fichiers versionnés.
 - [ ] E14 [opus] Revue finale : `/code-review`, `/security-review`, agent `calc-verifier` sur l'API démarrée. Corriger, puis tag `v0.1.0`.
