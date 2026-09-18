@@ -5,8 +5,7 @@ lieu de naissance, et renvoie les positions sidérales de 12 corps ainsi que 48
 lignes astrocartographiques (MC/IC/AC/DC) en GeoJSON.
 
 Le service est **sans état** : il ne connaît ni les villes, ni les critères,
-ni les utilisateurs. Cette logique vit dans `zenitha-web`, un service séparé
-et privé qui consomme cette API.
+ni les utilisateurs.
 
 Calcul via [pyswisseph](https://pypi.org/project/pyswisseph/) (Swiss
 Ephemeris) en mode Moshier — pas de fichiers d'éphémérides `.se1` à
@@ -17,8 +16,6 @@ télécharger, précision suffisante pour l'astrocartographie.
 AGPL-3.0 (voir [`LICENSE`](LICENSE)). Ce choix n'est pas arbitraire :
 pyswisseph est lui-même publié sous AGPL-3.0 (ou licence commerciale Astrodienst),
 et cette licence impose de publier le code de tout service réseau qui l'utilise.
-`zenitha-engine` est donc public ; `zenitha-web`, qui ne dépend pas de
-pyswisseph, reste privé.
 
 ## Lancer le service
 
@@ -76,8 +73,4 @@ l'ayanamsa, les 12 positions sidérales et les 48 lignes en GeoJSON
 (`MultiLineString`, coordonnées `[lng, lat]`).
 
 Le header `X-Engine-Key` n'est vérifié que si la variable d'environnement
-`ENGINE_API_KEY` est définie côté serveur (voir `docs/spec-technique.md` pour
-le détail des codes d'erreur `400`/`422`).
-
-Le contrat d'API complet (schémas, codes d'erreur, versionnement) est dans
-[`docs/spec-technique.md`](docs/spec-technique.md).
+`ENGINE_API_KEY` est définie côté serveur.
