@@ -1,0 +1,14 @@
+[Unit]
+Description=astro-engine (FastAPI)
+After=network.target
+
+[Service]
+User=deploy
+WorkingDirectory=/srv/astro/engine
+EnvironmentFile=/srv/astro/engine/.env
+ExecStart=/srv/astro/engine/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 2
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
